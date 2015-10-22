@@ -1,0 +1,30 @@
+[Package]
+version: 1
+depends:
+incremental: False
+
+[Product]
+type: localboot
+id: dfn_emet
+name: EMET
+description: The Enhanced Mitigation Experience Toolkit (EMET) is a utility that helps prevent vulnerabilities in software from being successfully exploited.
+advice: 
+version: 5.2
+priority: 0
+licenseRequired: False
+productClasses:
+setupScript: setup.opsiscript
+uninstallScript: uninstall.opsiscript
+updateScript: 
+alwaysScript: 
+onceScript: 
+customScript: 
+userLoginScript: 
+
+[Changelog]
+
+emet-b (5.2-1) stable; urgency=low
+
+	* initial: created by opsi-setup-detector
+
+-- opsisetupdetector.exe <info@uib.de>  18.03.2015 16:20:35
