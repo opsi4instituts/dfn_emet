@@ -1,0 +1,43 @@
+; This sourcecode published under the Terms of the General Public License.
+; Written by Eric Esser, Wissenschaftszentrum Berlin, eric.esser@wzb.eu.
+; Inspired by uib gmbh (www.uib.de), Thomas Besser (KIT), Detlef Krummel (GEI) and Tobias Friede (Fraunhofer)
+
+setloglevel = 6
+;  Log Errors in Logfile but don't abort:
+ExitOnError=false
+; Show syntax errors in the script:
+ScriptErrorMessages=on
+; Dont trace step by step through the script:
+TraceMode=off
+; let started programs run in front of the winst window
+StayOnTop=false
+
+requiredWinstVersion >= "4.11.5.0"
+
+;==========================================================================================================
+; Includes
+include_insert "insert_check_exit_code.opsiinc"
+include_append "section_linkfolder.opsiinc"
+
+;==========================================================================================================
+; Variables 
+
+DefVar $LogDir$
+DefVar $ProductId$ 
+DefVar $PrettyName$
+DefVar $MinimumSpace$
+DefVar $ProgramVersion$ 
+;----------------------------------------------------------------------------------------------
+
+Set $ProductId$                    = "dfn_emet"
+Set $PrettyName$		               = "EMET"
+Set $MinimumSpace$                 = "160 MB"
+Set $ProgramVersion$               = strPart("%installingProdVersion%", "1", calculate(strPos("%installingProdVersion%","-") + "-" + "1" ))
+Set $LogDir$                       = "%SystemDrive%\tmp"
+ 
+
+;==========================================================================================================
+; Program logic
+
+comment "Show product picture"
+ShowBitmap "%ScriptPath%\" + $ProductId$ + ".png" $PrettyName$
