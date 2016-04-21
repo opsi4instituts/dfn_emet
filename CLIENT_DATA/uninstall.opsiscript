@@ -1,61 +1,33 @@
-; Copyright (c) uib gmbh (www.uib.de)
-; This sourcecode is owned by uib gmbh
-; and published under the Terms of the General Public License.
-; credits: http://www.opsi.org/en/credits/
+; This sourcecode published under the Terms of the General Public License.
+; Written by Eric Esser, Wissenschaftszentrum Berlin, eric.esser@wzb.eu.
+; Inspired by uib gmbh (www.uib.de), Thomas Besser (KIT), Detlef Krummel (GEI) and Tobias Friede (Fraunhofer)
 
 [Actions]
-requiredWinstVersion >= "4.11.3.3"
-include_append "%ScriptPath%\check_msi_exitcode.opsiscript"
+;==========================================================================================================
+; Includes
+include_insert "common.opsiinc"
+include_insert "insert_uninstall_by_registry.opsiinc"
 
-DefVar $SetupType$
-DefVar $MsiId$
-DefVar $LogDir$
-DefVar $ExitCode$
-DefVar $ErrorMsg$
-DefVar $ProductId$
-DefVar $Version$
-DefVar $PrettyName$
+;==========================================================================================================
+; Variables
+DefVar $CustomPostDeinstall$
+DefVar $UninstallSearchString$
 
-DefVar $found$
-DefVar $UninstallProgram$
-
-Set $LogDir$ = "%SystemDrive%\tmp"
-
-; ----------------------------------------------------------------; ----------------------------------------------------------------
-Set $SetupType$ = "msi"
-Set $found$     = "false"
-Set $MsiId$     = '{F4DCB44D-F072-43A1-B4A5-57619C7B22D2}'
-; ----------------------------------------------------------------
-; - Please check the following values                             -
-; ----------------------------------------------------------------
-Set $ProductId$       = "emet"
-Set $Version$						= "5.2"
-Set $PrettyName$				= "EMET"
-; ----------------------------------------------------------------
-
-comment "Show product picture"
-ShowBitmap "%ScriptPath%\" + $ProductId$ + ".png" $PrettyName$ + " " + $Version$
+Set $UninstallSearchString$ = "EMET "
+;==========================================================================================================
+; Program logic
 
 Message "Uninstalling " + $ProductId$ + " ..."
 
- if (GetSystemtype = "64 Bit System")
-    if not (GetRegistryStringValue64("[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\" + $MsiId$ + "] DisplayName") = "")
-       comment "MSI id " + $MsiId$ + " found in registry, starting msiexec to uninstall"
-       Set $found$ = "true"
-       Winbatch_uninstall_msi
-       sub_check_exitcode
-    endif
- endif
- if ($found$ = "false")
-    if not (GetRegistryStringValue32("[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\" + $MsiId$ + "] DisplayName") = "")
-       comment "MSI id " + $MsiId$ + " found in registry, starting msiexec to uninstall"
-       Winbatch_uninstall_msi
-       sub_check_exitcode
-    endif
- endif
+; Sub function in section_uninstall_by_registry.opsiinc - variable set in commons.opsiinc
+comment "Starting sub_uninstall_by_registry"
+sub_uninstall_by_registry
 
-
-
-;-----------------------------------------------------
-[Winbatch_uninstall_msi]
-msiexec /x $MsiId$ /qb! REBOOT=ReallySuppress
+; Include post deinstall file in custom folder via OPSI property 
+comment "include custom post deinstall file"
+set $CustomPostDeinstall$ = getProductProperty("custom-post-deinstall","none")
+if not ($CustomPostDeinstall$ = "none")
+	if FileExists("%ScriptPath%\custom\" + $CustomPostDeinstall$)
+		include_insert "%ScriptPath%\custom\" + $CustomPostDeinstall$
+	endif
+endif

@@ -1,138 +1,46 @@
-; ----------------------------------------------------------------
-; Copyright (c) uib gmbh (www.uib.de)
-; This sourcecode is owned by uib
-; and published under the Terms of the General Public License.
-; credits: http://www.opsi.org/en/credits/
-; ----------------------------------------------------------------
+; This sourcecode published under the Terms of the General Public License.
+; Written by Eric Esser, Wissenschaftszentrum Berlin, eric.esser@wzb.eu.
+; Inspired by uib gmbh (www.uib.de), Thomas Besser (KIT), Detlef Krummel (GEI) and Tobias Friede (Fraunhofer)
 
-;****************************************
-; SETUPTYPE      msi
-;****************************************
-; PRODUCTID      emet-b
-; SETUPFILE      EMET 5.2 Setup.msi
-;****************************************
-; LICENSE        false     
-; PRODUCTDESC    The Enhanced Mitigation Experience Toolkit (EMET) is a utility that helps prevent vulnerabilities in software from being successfully exploited. 
-; PRODUCTNAME    EMET
-; PRODUCTSIZE    65 MB
-; PRODUCTVER     5.2
-;****************************************
-; SETUPSCRIPT    setup.opsiscript
-; UNINSSCRIPT    uninstall.opsiscript
-;****************************************
-; MSIID          {F4DCB44D-F072-43A1-B4A5-57619C7B22D2}
-; USE-MST        
-; INSTALLDIR     (not used)
-;****************************************
-; TIMESTAMP      18.03.2015 16:20:35
-;****************************************
-[Initial]
-setLogLevel=6
-;  Log Errors in Logfile but don't abort:
-ExitOnError=False
-; Show syntax errors in the script:
-ScriptErrorMessages=on
-; Dont trace step by step through the script:
-TraceMode=off
-; let started programs run in front of the winst window
-StayOnTop=False
- 
 
 [Actions]
-requiredWinstVersion >= "4.11.3.3"
+;==========================================================================================================
+; Includes
+include_insert "common.opsiinc"
 
-DefVar $SetupType$
-DefVar $ProductId$ 
-DefVar $Setupfile$ 
-DefVar $MinimumSpace$
-DefVar $ExitCode$
-DefVar $ErrorMsg$
-DefVar $MsiId$
-DefVar $NsisInstallBatch$
-DefVar $LogDir$
+;==========================================================================================================
+; Variables
+DefVar $CustomPostInstall$
+DefVar $SetupFile$
 
-DefVar $Version$
-DefVar $PrettyName$
+Set $SetupFile$ = "EMET Setup.msi"
 
-
-Set $LogDir$ = "%SystemDrive%\tmp"
-
-include_append "%ScriptPath%\check_msi_exitcode.opsiscript"
-
-; ----------------------------------------------------------------
-Set $SetupType$       = "msi"
-; ----------------------------------------------------------------
-
-; $ProductId$ is the name of the product in opsi, only lower letters, no umlauts, no white spaces, use '-' as a seperator
-Set $ProductId$       = "emet"
-Set $Setupfile$       = "EMET 5.2 Setup.msi"
-; the path where we find the product after the installation
-Set $MsiId$           = "{F4DCB44D-F072-43A1-B4A5-57619C7B22D2}"
-Set $MinimumSpace$    = "65 MB"
-; ----------------------------------------------------------------
-Set $Version$						= "5.2"
-Set $PrettyName$				= "EMET"
-; ----------------------------------------------------------------
-
+;==========================================================================================================
+; Program logic
 if not(HasMinimumSpace ("%SystemDrive%", $MinimumSpace$))
-  LogError "Not enough space on %SystemDrive%, " + $MinimumSpace$ + " on drive %SystemDrive% needed for " + $ProductId$
-  isFatalError "No Space"
-  ; Stop process and set installation status to failed
+	LogError "Not enough space on %SystemDrive%, " + $MinimumSpace$ + " on drive %SystemDrive% needed for " + $ProductId$
+	isFatalError "No Space"
+	; Stop process and set installation status to failed
 else
-  comment "Show product picture"
-  ShowBitmap "%ScriptPath%\" + $ProductId$ + ".png" $PrettyName$ + " " + $Version$
-  Killtask "EMET_Agent.exe"
-  Message "Installing " + $ProductId$ + " ..."
-  comment "Start setup program"
-  ChangeDirectory "%SCRIPTPATH%"
-  Winbatch_install_msi
-  Sub_check_exitcode	
+	Message "Installing " + $PrettyName$ + " " + $ProgramVersion$ + " ..."
+	
+	comment "Start setup program"
+	ChangeDirectory "%SCRIPTPATH%"
+	Winbatch_install
+	Sub_check_exitcode
+
+  comment "include custom post install file"
+  set $CustomPostInstall$ = getProductProperty("custom-post-install","none")
+  if not ($CustomPostInstall$ = "none")
+	  if FileExists("%ScriptPath%\custom\" + $CustomPostInstall$)
+		  include_insert "%ScriptPath%\custom\" + $CustomPostInstall$
+	  endif
+  endif
+
 endif
 
+;==========================================================================================================
+; Functions
 
-; ----------------------------------------------------------------
-; install sections
-; ----------------------------------------------------------------
-[Winbatch_install_msi]
-msiexec /i "%ScriptPath%\EMET 5.2 Setup.msi"  /l* "$LogDir$\$ProductId$.install_log.txt" /qb! ALLUSERS=1 REBOOT=ReallySuppress
-
-; ----------------------------------------------------------------
-
-[Sub_get_licensekey]
-if opsiLicenseManagementEnabled
-   comment "License management is enabled and will be used"
-
-   comment "Trying to get a license key"
-   Set $LicenseKey$ = demandLicenseKey ($LicensePool$)
-   ; If there is an assignment of exactly one licensepool to the product the following call is possible:
-   ; Set $LicenseKey$ = demandLicenseKey ("", $ProductId$)
-   ;
-   ; If there is an assignment of a license pool to a windows software id, it is possible to use:
-   ; DefVar $WindowsSoftwareId$
-   ; $WindowsSoftwareId$ = "..."
-   ; Set $LicenseKey$ = demandLicenseKey ("", "", $WindowsSoftwareId$)
-
-   DefVar $ServiceErrorClass$
-   set $ServiceErrorClass$ = getLastServiceErrorClass
-   comment "Error class: " + $ServiceErrorClass$
-   
-   if $ServiceErrorClass$ = "None"
-      comment "Everything fine, we got the license key '" + $LicenseKey$ + "'"
-   else
-      if $ServiceErrorClass$ = "LicenseConfigurationError"
-         LogError "Fatal: license configuration must be corrected"
-         LogError getLastServiceErrorMessage
-         isFatalError
-      else 
-         if $ServiceErrorClass$ = "LicenseMissingError"
-            LogError "Fatal: required license is not supplied"
-            isFatalError
-         endif
-      endif
-   endif
-else
-   LogError "Fatal: license required, but license management not enabled"
-   isFatalError
-endif
-
-; ----------------------------------------------------------------
+[Winbatch_install]
+msiexec /i "%ScriptPath%\$SetupFile$" /l* "$LogDir$\$ProductId$.install_log.txt" /qn /norestart ALLUSERS=1 REBOOT=ReallySuppress

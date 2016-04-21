@@ -1,6 +1,6 @@
 [Package]
 version: 1
-depends:
+depends: 
 incremental: False
 
 [Product]
@@ -9,10 +9,10 @@ id: dfn_emet
 name: EMET
 description: The Enhanced Mitigation Experience Toolkit (EMET) is a utility that helps prevent vulnerabilities in software from being successfully exploited.
 advice: 
-version: 5.2
+version: 5.5
 priority: 0
 licenseRequired: False
-productClasses:
+productClasses: 
 setupScript: setup.opsiscript
 uninstallScript: uninstall.opsiscript
 updateScript: 
@@ -21,8 +21,31 @@ onceScript:
 customScript: 
 userLoginScript: 
 
-[Changelog]
+[ProductDependency]
+action: setup
+requiredProduct: dfn_dotnet
+requiredStatus: installed
+requirementType: before
 
+[ProductProperty]
+type: unicode
+name: custom-post-install
+multivalue: False
+editable: False
+description: Define filename for include script in custom directory after installation
+values: ["none", "post-install.opsiinc"]
+default: ["none"]
+
+[ProductProperty]
+type: unicode
+name: custom-post-deinstall
+multivalue: False
+editable: False
+description: Define filename for include script in custom directory after deinstallation
+values: ["none", "post-deinstall.opsiinc"]
+default: ["none"]
+
+[Changelog]
 emet-b (5.2-1) stable; urgency=low
 
 	* initial: created by opsi-setup-detector
